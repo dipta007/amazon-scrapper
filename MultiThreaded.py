@@ -6,9 +6,10 @@ import time
 import random
 import json
 
+outfile = open("JSON/Fjson.out", "w")
 data = []
 thread_lock = threading.Lock()
-outfile = open("JSON/json1.out", "w")
+
 
 class ScrapingThread(threading.Thread):
     def __init__(self, asin):
@@ -26,12 +27,21 @@ def get_data(asin):
         json_data = json.dumps(current_product, indent=4, sort_keys=False)
 
         thread_lock.acquire()
-        outfile.write(json_data + ",")
+        outfile.write(json_data + ",\n")
         thread_lock.release()
 
 
 def solve():
+    outfile.write("[\n")
+
     asins = get_asins()
+    # asins = [
+    #     "1138010588", # test for asin \n
+    #     "B01GA0JCCU", # categories null
+    #     "B0779ML4G5", # unavailable
+    #     "B002BXAMJS", # no brand
+    #     "B073XVPX83"  # price
+    # ]
     threads = []
     for asin in asins:
         thread = ScrapingThread(asin)
@@ -53,6 +63,8 @@ def solve():
     for thread in threads:
         thread.join()
 
+    outfile.write("]\n")
+    outfile.close()
     print(len(data))
 
 
