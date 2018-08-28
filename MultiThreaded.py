@@ -1,19 +1,33 @@
-from ScrapeTor import parse, data
-# from ScrapeProxy import parse, data
+from ScrapeTor import parse
+# from ScrapeProxy import parse
 from GetAsin import get_asins
 import threading
 import time
+import random
 import json
 
+data = []
+thread_lock = threading.Lock()
+outfile = open("JSON/json1.out", "w")
 
 class ScrapingThread(threading.Thread):
     def __init__(self, asin):
         threading.Thread.__init__(self)
-        # self.thread_id = tid
         self.asin = asin
 
     def run(self):
-        parse(self.asin)
+        get_data(self.asin)
+
+
+def get_data(asin):
+    current_product = parse(asin)
+    if current_product:
+        data.append(current_product)
+        json_data = json.dumps(current_product, indent=4, sort_keys=False)
+
+        thread_lock.acquire()
+        outfile.write(json_data + ",")
+        thread_lock.release()
 
 
 def solve():
@@ -25,26 +39,20 @@ def solve():
 
     ind = 0
     while ind < len(threads):
-        try:
-            threads[ind].start()
-            threads[ind].join()
-            print("Completed Thread no " + ind)
-            ind += 1
-        except Exception as e:
-            time.sleep(10)
+        if threading.active_count() < 96:
+            try:
+                threads[ind].start()
+                print("Completed Thread no ", ind)
+                ind += 1
+            except Exception as e:
+                print("Thread Exception: ")
+                print(e)
+        else:
+            time.sleep(random.randint(1, 4))
 
-    # for thread in threads:
-    #     thread.start()
-    #
-    # for thread in threads:
-    #     thread.join()
+    for thread in threads:
+        thread.join()
 
-    json_data = json.dumps(data, indent=4, sort_keys=True)
-
-    outfile = open("json.out", "w")
-    outfile.write(json_data)
-    outfile.close()
-    # print(json_data)
     print(len(data))
 
 

@@ -3,6 +3,7 @@ from UserAgentList import user_agent_list
 import random
 from bs4 import BeautifulSoup
 from time import sleep
+import json
 
 tr = TorRequest()
 baseUrl = "http://www.amazon.com/dp/"
@@ -222,13 +223,12 @@ def parse(asin):
             current_product['categories'] = get_categories(soup)
             current_product['similar'] = get_similar_items(soup)
             current_product['rating'] = get_rating(soup)
+            current_product['rating'] = get_rating(soup)
 
-            # print(json.dumps(current_product, indent=4, sort_keys=False))
-            data.append(current_product)
             return current_product
 
     except Exception as e:
-        print("Exception on " + asin + ": ")
+        print("Exception on " + asin)
         print(e)
         return None
 
