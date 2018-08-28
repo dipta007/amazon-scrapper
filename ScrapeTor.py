@@ -53,7 +53,7 @@ def get_price(soup):
         price_str = soup.find(id="priceblock_ourprice").getText().strip()
         price_str = price_str.replace("$", "")
         try:
-            price = float(price_str)
+            price = float(price_str.split(" ")[0])
             price = price * 100.0
             return price
         except Exception as e:
@@ -62,7 +62,7 @@ def get_price(soup):
         price_str = soup.find(id="price_inside_buybox").getText().strip()
         price_str = price_str.replace("$", "")
         try:
-            price = float(price_str)
+            price = float(price_str.split(" ")[0])
             price = price * 100.0
             return price
         except Exception as e:
@@ -71,8 +71,8 @@ def get_price(soup):
         prices = soup.find_all(class_="a-color-price")
         price_str = prices[1].getText().strip()
         try:
-            price_str2 = price_str.replace("$", "")
-            price = float(price_str2)
+            price_str = price_str.replace("$", "")
+            price = float(price_str.split(" ")[0])
             price = price * 100.0
             return price
         except Exception as e:
@@ -192,27 +192,39 @@ def get_rating(soup):
         return rating
 
 
+def is_available(soup):
+    g_div = soup.find(id="g")
+    if g_div is not None:
+        d_img = soup.find(id="d")
+        if d_img is not None:
+            img_alt = d_img["alt"]
+            if img_alt == "Dogs of Amazon":
+                return False
+    return True
+
+
+def get_brand(soup):
+    if soup.find(id="bylineInfo") is not None:
+        return soup.find(id="bylineInfo").getText().strip()
+    return None
+
+
 def parse(asin):
     url = baseUrl + asin
 
-    try:
-        for iteration in range(20):
-            sleep(random.randint(1,4))
+    for iteration in range(44):
+        try:
             page = reset_my_identity(url)
             soup = BeautifulSoup(page.content, 'html.parser')
 
-            if soup.find(id="bylineInfo") is None:
-                raise ValueError('Not available')
-
-            if soup.find(id="productTitle") is None:
-                raise ValueError('Captcha Strikes :\'(')
-
+            if not is_available(soup):
+                print(iteration, asin)
+                return
 
             current_product = {}
-            current_product['asin'] = asin
+            current_product['asin'] = asin.strip()
             current_product['title'] = soup.find(id="productTitle").getText().strip()
-            current_product['brand'] = soup.find(id="bylineInfo").getText().strip()
-
+            current_product['brand'] = get_brand(soup)
             current_product['feature'] = get_feature(soup)
             current_product['description'] = get_description(soup)
             current_product['price'] = get_price(soup)
@@ -225,34 +237,16 @@ def parse(asin):
             current_product['rating'] = get_rating(soup)
             current_product['rating'] = get_rating(soup)
 
-            return current_product
+            updated_one = {}
+            for key, value in current_product.items():
+                if value is not None and value and value != "None":
+                    updated_one[key] = value
 
-    except Exception as e:
-        print("Exception on " + asin)
-        print(e)
-        return None
+            return updated_one
 
+        except Exception as e:
+            sleep(random.randint(1, 4))
+            print(e)
+            print(asin)
 
-# def solve():
-#     asins = [
-#         "B074H48L3X",
-#         "B073XVPX83",
-#         "B004CNH98C",
-#         "B077Y3QTTS",
-#         "B00BTD9QDO"
-#     ]
-#     for asin in asins:
-#         product = parse(asin);
-#         if product is not None:
-#             data.append(product)
-#
-#     json_data = json.dumps(data, indent=4, sort_keys=True)
-#     print(json_data)
-
-
-# current_milli_time = lambda: int(round(time.time() * 1000))
-# if __name__ == "__main__":
-#     starting = current_milli_time()
-#     solve()
-#     ending = current_milli_time()
-#     print(ending - starting)
+    print("Exception on " + asin)
