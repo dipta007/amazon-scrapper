@@ -1,4 +1,5 @@
 from ScrapeTor import parse, data
+# from ScrapeProxy import parse, data
 from GetAsin import get_asins
 import threading
 import time
@@ -22,14 +23,28 @@ def solve():
         thread = ScrapingThread(asin)
         threads.append(thread)
 
-    for thread in threads:
-        thread.start()
+    ind = 0
+    while ind < len(threads):
+        try:
+            threads[ind].start()
+            threads[ind].join()
+            print("Completed Thread no " + ind)
+            ind += 1
+        except Exception as e:
+            time.sleep(10)
 
-    for thread in threads:
-        thread.join()
+    # for thread in threads:
+    #     thread.start()
+    #
+    # for thread in threads:
+    #     thread.join()
 
     json_data = json.dumps(data, indent=4, sort_keys=True)
-    print(json_data)
+
+    outfile = open("json.out", "w")
+    outfile.write(json_data)
+    outfile.close()
+    # print(json_data)
     print(len(data))
 
 
