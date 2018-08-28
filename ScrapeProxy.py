@@ -35,6 +35,13 @@ def get_description(soup):
     return des.getText().strip();
 
 
+def get_prime(soup):
+    soup.find(id="bbop-check-box")
+    if soup is None:
+        return False
+    return True
+
+
 def get_price(soup):
     if soup.find(id="priceblock_ourprice") is not None:
         price_str = soup.find(id="priceblock_ourprice").getText().strip()
@@ -203,12 +210,13 @@ def parse(asin):
             current_product['feature'] = get_feature(soup)
             current_product['description'] = get_description(soup)
             current_product['price'] = get_price(soup)
+            current_product['prime'] = get_prime(soup)
             current_product['dimension'] = get_dimension(soup)
             current_product['images'] = get_images(soup)
             current_product['attributes'] = get_attr(soup)
             current_product['categories'] = get_categories(soup)
-            current_product['rating'] = get_rating(soup)
             current_product['similar'] = get_similar_items(soup)
+            current_product['rating'] = get_rating(soup)
 
             # print(json.dumps(current_product, indent=4, sort_keys=False))
             data.append(current_product)
