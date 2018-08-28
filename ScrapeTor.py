@@ -80,34 +80,84 @@ def get_price(soup):
 
 
 def get_dimension(soup):
-    product_details = soup.find(id="prodDetails")
-    if product_details is None:
-        return "None"
-    else:
-        curr_dimension = {};
+    if soup.find(id="prodDetails") is not None:
+        product_details = soup.find(id="prodDetails")
+        curr_dimension = {}
         curr = ""
         counter = 0
         for detail in product_details.find_all(class_="a-size-base"):
-            if curr == "Dimension":
-                dimension = detail.getText().split()
-                curr_dimension['length'] = dimension[0] + " " + dimension[5];
-                curr_dimension['width'] = dimension[2] + " " + dimension[5];
-                curr_dimension['height'] = dimension[4] + " " + dimension[5];
-                counter += 1
-                curr = "";
-            elif curr == "Weight":
-                curr_dimension['weight'] = detail.getText().strip();
-                counter += 1
-                curr = ""
+            try:
+                if curr == "Dimension":
+                    dimension = detail.getText().split()
+                    length = float(dimension[0])
+                    width = float(dimension[2])
+                    height = float(dimension[4])
+                    if dimension[5].startswith("inch"):
+                        length = length * 100.0
+                        width = width * 100.0
+                        height = height * 100.0
+                    curr_dimension['length'] = length
+                    curr_dimension['width'] = width
+                    curr_dimension['height'] = height
+                    counter += 1
+                    curr = ""
+                elif curr == "Weight":
+                    weight_list = detail.getText().split(" ")
+                    weight = float(weight_list[0])
+                    if weight_list[1].startswith("ounce"):
+                        weight = (weight * 100.0) / 16.0
+                    else:
+                        weight = weight * 100.0
+                    curr_dimension['weight'] = weight
+                    counter += 1
+                    curr = ""
 
-            if detail.getText().strip() == "Product Dimensions":
-                curr = "Dimension"
-            elif detail.getText().strip() == "Item Weight":
-                curr = "Weight"
+                if detail.getText().strip() == "Product Dimensions":
+                    curr = "Dimension"
+                elif detail.getText().strip() == "Item Weight":
+                    curr = "Weight"
 
-            if counter == 2:
-                break
+                if counter == 2:
+                    break
+            except Exception as e:
+                e = 1+2
+        return curr_dimension
 
+    elif soup.find(id="detail-bullets") is not None:
+        product_details = soup.find(id="detail-bullets")
+        curr_dimension = {}
+        counter = 0
+        for detail in product_details.find_all('li'):
+            try:
+                str = detail.getText().strip()
+                if str.startswith("Product Dimensions:"):
+                    str_list = str.split(" ")
+                    length = float(str_list[-6])
+                    width = float(str_list[-4])
+                    height = float(str_list[-2])
+                    if str_list[-1].startswith("inch"):
+                        length = length * 100.0
+                        width = width * 100.0
+                        height = height * 100.0
+                    curr_dimension['length'] = length
+                    curr_dimension['width'] = width
+                    curr_dimension['height'] = height
+                    counter += 1
+                elif str.startswith("Shipping Weight:"):
+                    str_list = str.split(" ")
+                    print(str_list)
+                    weight = float(str_list[2])
+                    if str_list[3].startswith("ounce"):
+                        weight = (weight * 100.0) / 16.0
+                    else:
+                        weight = weight * 100.0
+                    curr_dimension['weight'] = weight
+                    counter += 1
+
+                if counter == 2:
+                    break
+            except Exception as e:
+                e = 1+2
         return curr_dimension
 
 
@@ -218,7 +268,6 @@ def parse(asin):
             soup = BeautifulSoup(page.content, 'html.parser')
 
             if not is_available(soup):
-                print(iteration, asin)
                 return
 
             current_product = {}
@@ -246,7 +295,8 @@ def parse(asin):
 
         except Exception as e:
             sleep(random.randint(1, 4))
-            print(e)
-            print(asin)
+            # print(e)
+            # print(soup)
+            # print(asin)
 
     print("Exception on " + asin)
