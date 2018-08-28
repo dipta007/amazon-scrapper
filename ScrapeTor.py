@@ -2,7 +2,7 @@ from torrequest import TorRequest
 from UserAgentList import user_agent_list
 import random
 from bs4 import BeautifulSoup
-import json
+from time import sleep
 
 tr = TorRequest()
 baseUrl = "http://www.amazon.com/dp/"
@@ -11,6 +11,11 @@ data = []
 
 def reset_my_identity(url):
     tr.reset_identity()
+    # tr.ctrl.signal('CLEARDNSCACHE')  # see Stem docs for the full API
+    #
+    # print(type(tr.session))  # a requests.Session object
+    # c = cookielib.CookieJar()
+    # tr.session.cookies.update(c)
     user_agent = random.choice(user_agent_list)
     headers = {'User-Agent': user_agent}
     page = tr.get(url, headers=headers)
@@ -32,8 +37,7 @@ def get_description(soup):
     des = soup.find(id="productDescription")
     if des is None:
         return "None"
-    else:
-        return des.getText().strip();
+    return des.getText().strip()
 
 
 def get_price(soup):
@@ -45,7 +49,7 @@ def get_price(soup):
             price = price * 100.0
             return price
         except Exception as e:
-            return  price_str
+            return price_str
     elif soup.find(id="price_inside_buybox") is not None:
         price_str = soup.find(id="price_inside_buybox").getText().strip()
         price_str = price_str.replace("$", "")
@@ -64,7 +68,7 @@ def get_price(soup):
             price = price * 100.0
             return price
         except Exception as e:
-            return  price_str
+            return price_str
 
 
 def get_dimension(soup):
@@ -94,7 +98,7 @@ def get_dimension(soup):
                 curr = "Weight"
 
             if counter == 2:
-                break;
+                break
 
         return curr_dimension
 
@@ -102,6 +106,11 @@ def get_dimension(soup):
 def get_images(soup):
     images = []
     image_div = soup.find(id="altImages")
+    if image_div is None:
+        image_div = soup.find(id="imageBlockThumbs")
+    if image_div is None:
+        return None;
+
     for image in image_div.find_all("img"):
         if image["src"].endswith(".jpg"):
             image_src = image["src"].split(".")
@@ -135,19 +144,18 @@ def get_categories(soup):
     category_div = soup.find(id="wayfinding-breadcrumbs_feature_div")
     if category_div is None:
         return None
-    else:
-        for category in category_div.find_all(class_="a-color-tertiary"):
-            try:
-                now_cat = {}
-                url = category["href"]
-                url_list = url.split("node=")
-                now_cat["node"] = url_list[-1]
-                now_cat["title"] = category.getText().strip()
-                category_list.append(now_cat)
-            except Exception as e:
-                e = 1+2;
+    for category in category_div.find_all(class_="a-color-tertiary"):
+        try:
+            now_cat = {}
+            url = category["href"]
+            url_list = url.split("node=")
+            now_cat["node"] = url_list[-1]
+            now_cat["title"] = category.getText().strip()
+            category_list.append(now_cat)
+        except Exception as e:
+            e = 1+2
 
-        return category_list
+    return category_list
 
 
 def get_similar_items(soup):
@@ -157,7 +165,7 @@ def get_similar_items(soup):
             similar_asin = item.find("div")['data-asin'].strip()
             similar_items.append(similar_asin)
         except Exception as e:
-            e = 1+2;
+            e = 1+2
 
     return similar_items
 
@@ -167,7 +175,10 @@ def get_rating(soup):
     if review_div is None:
         return None
     else:
-        rating_str = review_div.find(class_="a-icon-alt").getText().strip()
+        rating_str = review_div.find(class_="a-icon-alt")
+        if rating_str is None:
+            return float(0.0)
+        rating_str = rating_str.getText().strip()
         rating_list = rating_str.split(" ");
         rating = float(rating_list[0])
         return rating
@@ -175,32 +186,41 @@ def get_rating(soup):
 
 def parse(asin):
     url = baseUrl + asin
-    page = reset_my_identity(url)
-    soup = BeautifulSoup(page.content, 'html.parser')
 
     try:
-        # print(soup.prettify())}
-        current_product = {}
-        current_product['asin'] = asin
-        current_product['title'] = soup.find(id="productTitle").getText().strip()
-        current_product['brand'] = soup.find(id="bylineInfo").getText().strip()
+        for iteration in range(20):
+            sleep(random.randint(1,4))
+            page = reset_my_identity(url)
+            soup = BeautifulSoup(page.content, 'html.parser')
 
-        current_product['feature'] = get_feature(soup)
-        current_product['description'] = get_description(soup)
-        current_product['price'] = get_price(soup)
-        current_product['dimension'] = get_dimension(soup)
-        current_product['images'] = get_images(soup)
-        current_product['attributes'] = get_attr(soup)
-        current_product['categories'] = get_categories(soup)
-        current_product['rating'] = get_rating(soup)
-        current_product['similar'] = get_similar_items(soup)
+            if soup.find(id="bylineInfo") is None:
+                raise ValueError('Not available')
 
-        # print(json.dumps(current_product, indent=4, sort_keys=False))
-        data.append(current_product)
-        return current_product
+            if soup.find(id="productTitle") is None:
+                raise ValueError('Captcha Strikes :\'(')
+
+
+            current_product = {}
+            current_product['asin'] = asin
+            current_product['title'] = soup.find(id="productTitle").getText().strip()
+            current_product['brand'] = soup.find(id="bylineInfo").getText().strip()
+
+            current_product['feature'] = get_feature(soup)
+            current_product['description'] = get_description(soup)
+            current_product['price'] = get_price(soup)
+            current_product['dimension'] = get_dimension(soup)
+            current_product['images'] = get_images(soup)
+            current_product['attributes'] = get_attr(soup)
+            current_product['categories'] = get_categories(soup)
+            current_product['rating'] = get_rating(soup)
+            current_product['similar'] = get_similar_items(soup)
+
+            # print(json.dumps(current_product, indent=4, sort_keys=False))
+            data.append(current_product)
+            return current_product
 
     except Exception as e:
-        print("Exception ")
+        print("Exception on " + asin + ": ")
         print(e)
         return None
 
