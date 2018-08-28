@@ -36,6 +36,7 @@ def solve():
 
     asins = get_asins()
     # asins = [
+    #     "B078WRBWNG", # dimension different layout
     #     "1138010588", # test for asin \n
     #     "B01GA0JCCU", # categories null
     #     "B0779ML4G5", # unavailable
