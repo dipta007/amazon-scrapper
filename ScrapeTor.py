@@ -145,7 +145,6 @@ def get_dimension(soup):
                     counter += 1
                 elif str.startswith("Shipping Weight:"):
                     str_list = str.split(" ")
-                    print(str_list)
                     weight = float(str_list[2])
                     if str_list[3].startswith("ounce"):
                         weight = (weight * 100.0) / 16.0

@@ -6,7 +6,7 @@ import time
 import random
 import json
 
-outfile = open("JSON/Fjson.out", "w")
+outfile = open("JSON/json3.out", "w")
 data = []
 thread_lock = threading.Lock()
 
@@ -53,7 +53,7 @@ def solve():
         if threading.active_count() < 96:
             try:
                 threads[ind].start()
-                print("Completed Thread no ", ind)
+                # print("Completed Thread no ", ind)
                 ind += 1
             except Exception as e:
                 print("Thread Exception: ")

@@ -223,8 +223,8 @@ def parse(asin):
             return current_product
 
     except Exception as e:
-        print("Exception on " + asin + ": ")
-        print(e)
+        # print("Exception on " + asin + ": ")
+        # print(e)
         return None
 
 
