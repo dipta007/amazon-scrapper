@@ -6,7 +6,7 @@ import time
 import random
 import json
 
-outfile = open("JSON/json3.out", "w")
+outfile = open("JSON/json4.out", "w")
 data = []
 thread_lock = threading.Lock()
 
@@ -50,7 +50,7 @@ def solve():
 
     ind = 0
     while ind < len(threads):
-        if threading.active_count() < 96:
+        if threading.active_count() < 30000:
             try:
                 threads[ind].start()
                 # print("Completed Thread no ", ind)
